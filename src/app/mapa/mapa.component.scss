@@ -1,0 +1,106 @@
+.mapa-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.mapa-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mapa-header h1 {
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.descripcion {
+  color: #7f8c8d;
+  font-size: 16px;
+  margin-top: 0;
+}
+
+.mapa-leaflet {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.map-container {
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+.mapa-footer {
+  margin-top: 20px;
+  color: #7f8c8d;
+  font-size: 14px;
+  text-align: center;
+}
+
+.filtros-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* Estilos para el popup */
+:host ::ng-deep .departamento-popup {
+  padding: 10px;
+  text-align: center;
+}
+
+:host ::ng-deep .departamento-popup h3 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+:host ::ng-deep .departamento-popup p {
+  margin: 5px 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .mapa-container {
+    padding: 10px;
+  }
+  
+  .mapa-leaflet {
+    min-height: 400px;
+  }
+  
+  .mapa-header h1 {
+    font-size: 24px;
+  }
+}

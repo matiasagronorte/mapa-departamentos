@@ -1,1 +1,20 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Importar los estilos de Leaflet */
+@import 'leaflet/dist/leaflet.css';
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f5f7fa;
+  color: #333;
+}
