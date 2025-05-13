@@ -77,7 +77,7 @@ export class MapaComponent implements OnInit {
         header: true,
         delimiter: ',', // Aseguramos usar coma como delimitador
         skipEmptyLines: true,
-        complete: (result) => {
+        complete: (result: { data: any[]; }) => {
           this.departamentosADR = result.data
             .filter((item: any) => item.provincia && item.departamento) // Filtrar datos vacíos
             .map((item: any) => ({
@@ -89,7 +89,7 @@ export class MapaComponent implements OnInit {
           console.log('Muestra de departamentos ADR:', this.departamentosADR.slice(0, 5));
           resolve();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error al cargar datos ADR:', error);
           reject(error);
         }
@@ -99,42 +99,68 @@ export class MapaComponent implements OnInit {
 
   private cargarDatosDepartamentos(): Promise<void> {
     return new Promise((resolve, reject) => {
-      Papa.parse('./assets/datos-santa_fe.csv', {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: (result) => {
-          this.departamentosConDatos = result.data
-            .filter((item: any) => 
-              item['PROVINCIA ESTABLECIMIENTO'] && 
-              item['PARTIDO ESTABLECIMIENTO']
-            )
-            .map((item: any) => {
-              // Convertir los valores numéricos de string a number
-              const hectareasSembradas = this.parseNumericValue(item['Suma de TOTAL DE HECTAREAS SEMBRADAS']);
-              const hectareasNoClientes = this.parseNumericValue(item['Total de hectareas de no clientes']);
+      // Obtener todas las provincias que tienen datos
+      const provincias = ['santa_fe', 'misiones', 'cordoba', 'entre_rios', 'santiago_del_estero','corrientes']; // Agrega todas las provincias que necesites
+      let promesas: Promise<void>[] = [];
+
+      // Crear una promesa para cargar los datos de cada provincia
+      provincias.forEach(provincia => {
+        const promesa = new Promise<void>((resolveProvince, rejectProvince) => {
+          Papa.parse(`./assets/datos-${provincia}.csv`, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (result: { data: any[]; }) => {
+              const datosProvincia = result.data
+                .filter((item: any) => 
+                  item['PROVINCIA ESTABLECIMIENTO'] && 
+                  item['PARTIDO ESTABLECIMIENTO']
+                )
+                .map((item: any) => {
+                  // Convertir los valores numéricos de string a number
+                  const hectareasSembradas = this.parseNumericValue(item['Suma de TOTAL DE HECTAREAS SEMBRADAS']);
+                  const hectareasNoClientes = this.parseNumericValue(item['Total de hectareas de no clientes']);
+                  
+                  return {
+                    provincia: this.normalizarTexto(item['PROVINCIA ESTABLECIMIENTO']),
+                    departamento: this.normalizarTexto(item['PARTIDO ESTABLECIMIENTO']),
+                    datos: true,
+                    recuentoTitular: parseInt(item['Recuento de TITULAR']) || 0,
+                    recuentoEstablecimiento: parseInt(item['Recuento de NOMBRE ESTABLECIMIENTO']) || 0,
+                    hectareasSembradas: hectareasSembradas,
+                    hectareasNoClientes: hectareasNoClientes,
+                    porcentajeNoClientes: item['Porcentaje de hectareas de no clientes'],
+                    datosCompletos: item // Guardamos los datos originales completos
+                  };
+                });
               
-              return {
-                provincia: this.normalizarTexto(item['PROVINCIA ESTABLECIMIENTO']),
-                departamento: this.normalizarTexto(item['PARTIDO ESTABLECIMIENTO']),
-                datos: true,
-                recuentoTitular: parseInt(item['Recuento de TITULAR']) || 0,
-                recuentoEstablecimiento: parseInt(item['Recuento de NOMBRE ESTABLECIMIENTO']) || 0,
-                hectareasSembradas: hectareasSembradas,
-                hectareasNoClientes: hectareasNoClientes,
-                porcentajeNoClientes: item['Porcentaje de hectareas de no clientes'],
-                datosCompletos: item // Guardamos los datos originales completos
-              };
-            });
-          console.log('Datos departamentos cargados:', this.departamentosConDatos.length, 'departamentos');
+              // Agregar los datos de esta provincia al array principal
+              this.departamentosConDatos = [...this.departamentosConDatos, ...datosProvincia];
+              console.log(`Datos de ${provincia} cargados:`, datosProvincia.length, 'departamentos');
+              resolveProvince();
+            },
+            error: (error: any) => {
+              console.error(`Error al cargar datos de ${provincia}:`, error);
+              // Resolvemos en lugar de rechazar para que el proceso continúe con otras provincias
+              resolveProvince();
+            }
+          });
+        });
+        
+        promesas.push(promesa);
+      });
+
+      // Esperar a que todas las promesas se resuelvan
+      Promise.all(promesas)
+        .then(() => {
+          console.log('Total de departamentos con datos cargados:', this.departamentosConDatos.length);
           console.log('Muestra de departamentos con datos:', this.departamentosConDatos.slice(0, 5));
           resolve();
-        },
-        error: (error) => {
+        })
+        .catch(error => {
           console.error('Error al cargar datos de departamentos:', error);
           reject(error);
-        }
-      });
+        });
     });
   }
 
@@ -152,46 +178,64 @@ export class MapaComponent implements OnInit {
   }
 
   private loadTopoJson(): void {
-    // Cargar el archivo TopoJSON
-    fetch('./assets/departamentos-santa_fe.topojson')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(topoData => {
-        console.log('TopoJSON cargado correctamente');
-        
-        // Convertir TopoJSON a GeoJSON
-        if (topoData && topoData.objects) {
-          // Obtener el nombre de la primera propiedad en objects
-          const objectName = Object.keys(topoData.objects)[0];
-          
-          if (objectName) {
-            const geoJsonData = topojson.feature(topoData, topoData.objects[objectName]) as unknown as GeoJSON.FeatureCollection;
-            
-            // Log de muestra de features
-            if (geoJsonData.features && geoJsonData.features.length > 0) {
-              console.log('Muestra de departamentos en GeoJSON:', 
-                geoJsonData.features.slice(0, 3).map((f: any) => ({
-                  departamento: f.properties.departamento || f.properties.nam,
-                  provincia: f.properties.provincia
-                }))
-              );
-            }
-            
-            this.renderGeoJson(geoJsonData);
-          } else {
-            console.error('No se encontró ninguna propiedad en el objeto TopoJSON');
+    // Lista de provincias para las que hay archivos TopoJSON
+    const provincias = ['santa_fe', 'cordoba', 'corrientes', 'entre_rios', 'santiago_del_estero','misiones']; // Agrega/quita provincias según tus archivos
+
+    // Cargar todos los archivos TopoJSON en paralelo
+    const promesas = provincias.map(provincia => {
+      const url = `./assets/departamentos-${provincia}.topojson`;
+      return fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} al cargar ${url}`);
           }
-        } else {
-          console.error('Formato de TopoJSON no válido:', topoData);
+          return response.json().then(topoData => ({ provincia, topoData }));
+        })
+        .catch(error => {
+          console.error(`Error al cargar el TopoJSON de ${provincia}:`, error);
+          return null; // Para que Promise.all no falle por un archivo
+        });
+    });
+
+    Promise.all(promesas).then(results => {
+      // Filtrar los archivos que se cargaron correctamente
+      const geoJsonFeatures: any[] = [];
+      results.forEach(result => {
+        if (result && result.topoData && result.topoData.objects) {
+          const objectName = Object.keys(result.topoData.objects)[0];
+          if (objectName) {
+            const geoJsonData = topojson.feature(result.topoData, result.topoData.objects[objectName]) as any;
+            if (geoJsonData.features && geoJsonData.features.length > 0) {
+              // Añadir la provincia a cada feature si no está
+              geoJsonData.features.forEach((f: any) => {
+                if (!f.properties.provincia) {
+                  f.properties.provincia = result.provincia.replace('_', ' ');
+                }
+              });
+              geoJsonFeatures.push(...geoJsonData.features);
+            }
+          }
         }
-      })
-      .catch(error => {
-        console.error('Error al cargar el TopoJSON:', error);
       });
+
+      if (geoJsonFeatures.length > 0) {
+        // Crear un FeatureCollection combinando todos los features
+        const combinedGeoJson = {
+          type: 'FeatureCollection',
+          features: geoJsonFeatures
+        };
+        // Log de muestra
+        console.log('Muestra de departamentos en GeoJSON:', 
+          geoJsonFeatures.slice(0, 3).map((f: any) => ({
+            departamento: f.properties.departamento || f.properties.nam,
+            provincia: f.properties.provincia
+          }))
+        );
+        this.renderGeoJson(combinedGeoJson);
+      } else {
+        console.error('No se cargó ningún departamento desde los TopoJSON.');
+      }
+    });
   }
 
   private renderGeoJson(geoJsonData: any): void {
@@ -213,9 +257,17 @@ export class MapaComponent implements OnInit {
         const nombreNormalizado = this.normalizarTexto(nombre);
         const provinciaNormalizada = this.normalizarTexto(provincia);
         
-        // Determinar estado con depuración
+        // Determinar estado con nueva lógica
         const estaEnADR = this.estaEnADR(provinciaNormalizada, nombreNormalizado);
         const tieneDatos = this.tieneDatos(provinciaNormalizada, nombreNormalizado);
+        let estado = '';
+        if (tieneDatos) {
+          estado = 'Con datos';
+        } else if (estaEnADR) {
+          estado = 'En ADR, sin datos';
+        } else {
+          estado = 'Fuera de ADR y sin datos';
+        }
         
         // Obtener los datos completos si existen
         const datosDepartamento = this.obtenerDatosDepartamento(provinciaNormalizada, nombreNormalizado);
@@ -225,14 +277,12 @@ export class MapaComponent implements OnInit {
           <div class="departamento-popup">
             <h3>${nombre}</h3>
             <p>Provincia: ${provincia}</p>
+            <p>Estado: ${estado}</p>
         `;
         
-        if (!estaEnADR) {
-          popupContent += `<p>Estado: Fuera de ADR</p>`;
-        } else if (tieneDatos && datosDepartamento) {
+        if (tieneDatos && datosDepartamento) {
           // Si tiene datos, mostramos todos los detalles
           popupContent += `
-            <p>Estado: Con datos</p>
             <div class="datos-detalle">
               <h4>Información detallada:</h4>
               <table>
@@ -259,13 +309,6 @@ export class MapaComponent implements OnInit {
               </table>
             </div>
           `;
-        } else {
-          popupContent += `<p>Estado: Sin datos</p>`;
-        }
-        
-        // Añadir información de depuración solo si no hay datos
-        if (!tieneDatos || !datosDepartamento) {
-          popupContent += `<p><small>En ADR: ${estaEnADR ? 'Sí' : 'No'}, Datos: ${tieneDatos ? 'Sí' : 'No'}</small></p>`;
         }
         
         popupContent += `</div>`;
@@ -308,26 +351,22 @@ export class MapaComponent implements OnInit {
     const nombreNormalizado = this.normalizarTexto(nombre);
     const provinciaNormalizada = this.normalizarTexto(provincia);
     
+    // Determinar si tiene datos
+    const tieneDatos = this.tieneDatos(provinciaNormalizada, nombreNormalizado);
     // Determinar si está en ADR
     const estaEnADR = this.estaEnADR(provinciaNormalizada, nombreNormalizado);
     
-    // Determinar si tiene datos
-    const tieneDatos = this.tieneDatos(provinciaNormalizada, nombreNormalizado);
-    
-    // Aplicar colores según reglas:
-    // 🔘 Gris: No pertenece a ADR (adr = 0)
-    // 🔵 Azul: Pertenece a ADR (adr = 1) pero no tiene datos
-    // ✅ Verde: Pertenece a ADR (adr = 1) y tiene datos
-    
+    // Nueva lógica:
+    // ✅ Verde: Si tiene datos (aunque no esté en ADR)
+    // 🔵 Azul: Si está en ADR pero no tiene datos
+    // 🔘 Gris: Si no está en ADR ni tiene datos
     let color = '#808080'; // Gris por defecto
     let opacity = 0.7;
     
-    if (estaEnADR) {
-      if (tieneDatos) {
-        color = '#4CAF50'; // Verde
-      } else {
-        color = '#3388ff'; // Azul
-      }
+    if (tieneDatos) {
+      color = '#4CAF50'; // Verde
+    } else if (estaEnADR) {
+      color = '#3388ff'; // Azul
     }
     
     return {
@@ -340,79 +379,24 @@ export class MapaComponent implements OnInit {
   }
 
   private estaEnADR(provincia: string, departamento: string): boolean {
-    // Verificación especial para Santa Fe
-    if (provincia === 'santa fe' || provincia === 'santafe') {
-      const santaFeDept = this.departamentosADR.find(d => 
-        (d.provincia === 'santa fe' || d.provincia === 'santafe' || d.provincia === 'santa_fe') && 
-        d.departamento === departamento
-      );
-      
-      return santaFeDept ? santaFeDept.en_adr === 1 : false;
-    }
-    
-    const departamentoADR = this.departamentosADR.find(d => {
-      const provinciaCoincide = 
-        d.provincia === provincia || 
-        d.provincia.includes(provincia) || 
-        provincia.includes(d.provincia);
-        
-      const departamentoCoincide = 
-        d.departamento === departamento || 
-        d.departamento.includes(departamento) || 
-        departamento.includes(d.departamento);
-        
-      return provinciaCoincide && departamentoCoincide;
-    });
-    
-    return departamentoADR ? departamentoADR.en_adr === 1 : false;
+    // Coincidencia estricta por provincia y departamento normalizados
+    return this.departamentosADR.some(d =>
+      d.provincia === provincia && d.departamento === departamento && d.en_adr === 1
+    );
   }
 
   private tieneDatos(provincia: string, departamento: string): boolean {
-    // Verificación especial para Santa Fe
-    if (provincia === 'santa fe' || provincia === 'santafe') {
-      return this.departamentosConDatos.some(d => 
-        (d.provincia === 'santa fe' || d.provincia === 'santafe') && 
-        d.departamento === departamento
-      );
-    }
-    
-    return this.departamentosConDatos.some(d => {
-      const provinciaCoincide = 
-        d.provincia === provincia || 
-        d.provincia.includes(provincia) || 
-        provincia.includes(d.provincia);
-        
-      const departamentoCoincide = 
-        d.departamento === departamento || 
-        d.departamento.includes(departamento) || 
-        departamento.includes(d.departamento);
-        
-      return provinciaCoincide && departamentoCoincide;
-    });
+    // Coincidencia estricta por provincia y departamento normalizados
+    return this.departamentosConDatos.some(d =>
+      d.provincia === provincia && d.departamento === departamento
+    );
   }
 
   private obtenerDatosDepartamento(provincia: string, departamento: string): DepartamentoDatos | null {
-    // Verificación especial para Santa Fe
-    if (provincia === 'santa fe' || provincia === 'santafe') {
-      return this.departamentosConDatos.find(d => 
-        (d.provincia === 'santa fe' || d.provincia === 'santafe') && 
-        d.departamento === departamento
-      ) || null;
-    }
-    
-    return this.departamentosConDatos.find(d => {
-      const provinciaCoincide = 
-        d.provincia === provincia || 
-        d.provincia.includes(provincia) || 
-        provincia.includes(d.provincia);
-        
-      const departamentoCoincide = 
-        d.departamento === departamento || 
-        d.departamento.includes(departamento) || 
-        departamento.includes(d.departamento);
-        
-      return provinciaCoincide && departamentoCoincide;
-    }) || null;
+    // Coincidencia estricta por provincia y departamento normalizados
+    return this.departamentosConDatos.find(d =>
+      d.provincia === provincia && d.departamento === departamento
+    ) || null;
   }
 
   private determinarEstadoDepartamento(provincia: string, departamento: string): string {
