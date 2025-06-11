@@ -1,2 +1,2 @@
-ng build --configuration production --base-href /mapa-departamentos/
-npx angular-cli-ghpages --dir=dist/mapa-departamentos/browser
+ng build --configuration production --base-href /mapa-departamentos/   
+npx angular-cli-ghpages --dir=dist/mapa-departamentos/browser --no-silent
