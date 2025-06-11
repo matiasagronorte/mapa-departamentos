@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-critters-container>
+<head>
+  <meta charset="utf-8">
+  <title>Mapa de departamentos ADR</title>
+  <base href="https://matiasagronorte.github.io/mapa-departamentos/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="refresh" content="9999999">
+  <meta name="robots" content="noarchive">
+  <meta name="googlebot" content="noarchive">
+  <link rel="icon" type="image/x-icon" href="logojd_n.jpeg?v=1">
+<style>html,body{margin:0;padding:0;height:100%;font-family:Arial,sans-serif}*,*:before,*:after{box-sizing:border-box}body{background-color:#f5f7fa;color:#333}
+</style><link rel="stylesheet" href="styles-FBMPAAGM.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles-FBMPAAGM.css"></noscript></head>
+<body>
+  <app-root></app-root>
+  <script>
+    // Evitar cacheo de archivos js/css
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    // Forzar recarga sin cache
+    if (window.performance && window.performance.navigation.type === 1) {
+      window.location.reload(true);
+    }
+    // Evitar cacheo de recursos
+    (function() {
+      var links = document.getElementsByTagName('link');
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].rel === 'stylesheet' || links[i].rel === 'icon') {
+          links[i].href += (links[i].href.indexOf('?') === -1 ? '?' : '&') + 'nocache=' + new Date().getTime();
+        }
+      }
+    })();
+  </script>
+<script src="polyfills-FFHMD2TL.js" type="module"></script><script src="main-BIYZRS47.js" type="module"></script></body>
+</html>
