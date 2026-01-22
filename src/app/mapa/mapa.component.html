@@ -3,6 +3,31 @@
   <p class="map-subtitle">Visualización interactiva de los departamentos de la región</p>
   <div class="map-container modern-map-container">
     <div id="map"></div>
+
+    <!-- Control de Capas Flotante -->
+    <div class="layers-control">
+      <div class="layers-header">
+        <i class="layer-icon">layers</i>
+        <span>Capas</span>
+      </div>
+      <div class="layers-body">
+        <div class="layer-item" *ngFor="let capa of capas">
+          <label class="switch">
+            <input type="checkbox" [(ngModel)]="capa.visible" (change)="toggleCapa(capa.id)">
+            <span class="slider round"></span>
+          </label>
+          <div class="layer-info">
+            <span class="layer-name">{{capa.nombre}}</span>
+            <div class="layer-indicators">
+              <span *ngIf="capa.id === 'datos_regionales'" class="indicator-dot verde" title="Con Datos"></span>
+              <span *ngIf="capa.id === 'datos_regionales'" class="indicator-dot azul" title="Área ADR"></span>
+              <span *ngIf="capa.id !== 'datos_regionales'" class="indicator-dot"
+                [style.background-color]="capa.color"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <hr>
   <footer class="map-footer">© 2025 Agronorte</footer>

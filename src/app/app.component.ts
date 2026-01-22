@@ -12,7 +12,7 @@ export class AppComponent {
   title = 'mapa-departamentos';
 
   constructor() {
-    this.verificarPassword();
+    // this.verificarPassword();
   }
 
   private verificarPassword(): void {

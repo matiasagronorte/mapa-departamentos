@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>Mapa de departamentos ADR</title>
@@ -12,25 +13,28 @@
   <meta http-equiv="refresh" content="9999999" />
   <meta name="robots" content="noarchive">
   <meta name="googlebot" content="noarchive">
-  <link rel="icon" type="image/x-icon" href="logojd_n.jpeg?v=1">
+  <link rel="icon" type="image/x-icon" href="assets/logojd_n.jpeg?v=1">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
+
 <body>
   <app-root></app-root>
   <script>
     // Evitar cacheo de archivos js/css
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
           registration.unregister();
         }
       });
     }
     // Forzar recarga sin cache
-    if (window.performance && window.performance.navigation.type === 1) {
-      window.location.reload(true);
-    }
+    // if (window.performance && window.performance.navigation.type === 1) {
+    //   window.location.reload(true);
+    // }
     // Evitar cacheo de recursos
-    (function() {
+    (function () {
       var links = document.getElementsByTagName('link');
       for (var i = 0; i < links.length; i++) {
         if (links[i].rel === 'stylesheet' || links[i].rel === 'icon') {
@@ -40,4 +44,5 @@
     })();
   </script>
 </body>
+
 </html>
